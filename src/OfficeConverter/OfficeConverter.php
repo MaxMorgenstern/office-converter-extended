@@ -19,6 +19,8 @@ class OfficeConverter
     /** @var string */
     private $filter = '';
     private $logPath;
+    /** @var string */
+    private $userInstallationDirectory;
 
     /**
      * OfficeConverter constructor.
@@ -52,6 +54,7 @@ class OfficeConverter
         }
 
         $outdir = $this->tempPath;
+        
         $this->exec($this->makeCommand($outdir, $outputExtension));
 
         return $this->prepOutput($outdir, $filename, $outputExtension);
@@ -127,6 +130,27 @@ class OfficeConverter
     }
 
     /**
+     * @param string $userInstallationDirectory
+     * 
+     * @return void
+     */
+    public function setUserInstallationDirectory($userInstallationDirectory)
+    {
+        $this->userInstallationDirectory = $userInstallationDirectory;
+    }
+
+    /**
+     * @return string
+     */
+    private function getUserInstallationDirectory()
+    {
+        if (!$this->userInstallationDirectory) {
+           return $_SERVER['HOME'];
+        }
+        return $this->userInstallationDirectory;
+    }
+
+    /**
      * @param string $outputDirectory
      * @param string $outputExtension
      *
@@ -141,7 +165,12 @@ class OfficeConverter
         $randomNumber = mt_rand(1, 20);
 
         // Add the userInstallationDirectory option
-        $userInstallationDirectoryOption = "-env:UserInstallation=file://{$_SERVER['HOME']}/.config/libreoffice-profile{$randomNumber}";
+        $userInstallationDirectory = $this->getUserInstallationDirectory();
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            $userInstallationDirectoryOption = "-env:UserInstallation=file:///{$userInstallationDirectory}/.config/libreoffice-profile{$randomNumber}";
+        } else {
+            $userInstallationDirectoryOption = "-env:UserInstallation=file://{$userInstallationDirectory}/.config/libreoffice-profile{$randomNumber}";
+        }
 
         return "\"$this->bin\" --headless --convert-to {$outputExtension}{$this->filter} $userInstallationDirectoryOption $oriFile --outdir $outputDirectory";
     }
